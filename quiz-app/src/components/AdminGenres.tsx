@@ -33,8 +33,8 @@ export default function AdminGenres() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-white mb-6">📂 ジャンル管理</h2>
-      
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">📂 ジャンル管理</h2>
+
       {/* 新規作成 */}
       <div className="flex gap-3 mb-6">
         <input
@@ -42,7 +42,7 @@ export default function AdminGenres() {
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="新しいジャンル名"
-          className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
         <button onClick={addGenre} disabled={loading} className="btn-primary">
           追加
@@ -52,11 +52,11 @@ export default function AdminGenres() {
       {/* 一覧 */}
       <div className="space-y-2">
         {genres.map((genre) => (
-          <div key={genre.id} className="flex items-center justify-between px-4 py-3 bg-gray-800 rounded-xl border border-gray-700">
-            <span className="text-white font-medium">{genre.name}</span>
+          <div key={genre.id} className="flex items-center justify-between px-4 py-3 bg-white rounded-xl border border-gray-200">
+            <span className="text-gray-800 font-medium">{genre.name}</span>
             <button
               onClick={() => deleteGenre(genre.id)}
-              className="text-red-400 hover:text-red-300 text-sm"
+              className="text-red-500 hover:text-red-600 text-sm"
             >
               削除
             </button>
