@@ -22,9 +22,9 @@ export default function AdminReset() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-white mb-6">🗑️ データリセット</h2>
-      <div className="bg-gray-800 rounded-2xl border border-red-900/50 p-6">
-        <p className="text-gray-300 mb-4">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">🗑️ データリセット</h2>
+      <div className="bg-white rounded-2xl border border-red-200 p-6">
+        <p className="text-gray-600 mb-4">
           蓄積された回答データ（参加者の回答、スコア、ランキング）をすべて初期化します。<br />
           問題データやジャンル設定は保持されます。
         </p>
@@ -35,7 +35,7 @@ export default function AdminReset() {
         >
           {resetting ? 'リセット中...' : '⚠️ 回答データを全削除'}
         </button>
-        {done && <p className="text-green-400 mt-4">✅ リセット完了しました</p>}
+        {done && <p className="text-green-500 mt-4">✅ リセット完了しました</p>}
       </div>
     </div>
   );
