@@ -62,14 +62,14 @@ export default function QuizQuestion({ question, participantId, onAnswer }: Prop
   return (
     <div className="card">
       {/* タイマーバー */}
-      <div className="w-full bg-white/10 rounded-full h-3 mb-4 overflow-hidden">
+      <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-1000 ${timeColor}`}
           style={{ width: `${timePercent}%` }}
         />
       </div>
-      <div className="text-right text-white/70 text-sm mb-4">
-        残り <span className={`font-bold text-lg ${timeLeft <= 5 ? 'text-red-400' : 'text-white'}`}>{timeLeft}</span> 秒
+      <div className="text-right text-gray-500 text-sm mb-4">
+        残り <span className={`font-bold text-lg ${timeLeft <= 5 ? 'text-red-500' : 'text-gray-800'}`}>{timeLeft}</span> 秒
       </div>
 
       {/* 問題画像 */}
@@ -84,7 +84,7 @@ export default function QuizQuestion({ question, participantId, onAnswer }: Prop
       )}
 
       {/* 問題文 */}
-      <h2 className="text-xl font-bold text-white mb-6 leading-relaxed">
+      <h2 className="text-xl font-bold text-gray-800 mb-6 leading-relaxed">
         {question.question_text}
       </h2>
 
@@ -109,7 +109,7 @@ export default function QuizQuestion({ question, participantId, onAnswer }: Prop
             <div className="text-2xl mb-2">
               {checkAnswer(answer, question.correct_answers) ? '🎊 正解！' : '😢 不正解...'}
             </div>
-            <p className="text-white/60 text-sm">
+            <p className="text-gray-500 text-sm">
               正解: {question.correct_answers[0]}
             </p>
           </div>
@@ -118,3 +118,4 @@ export default function QuizQuestion({ question, participantId, onAnswer }: Prop
     </div>
   );
 }
+  
