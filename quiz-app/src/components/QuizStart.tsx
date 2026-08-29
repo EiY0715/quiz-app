@@ -39,8 +39,8 @@ export default function QuizStart({ onStart }: Props) {
   return (
     <div className="card text-center">
       <div className="mb-6">
-        <h1 className="text-3xl font-black text-gray-800 mb-2">🎉 文化祭クイズ</h1>
-        <p className="text-gray-500">ニックネームを入力してスタート！</p>
+      <h1 className="text-3xl font-black text-gray-800 mb-2">🎉 文化祭クイズ</h1>
+<p className="text-gray-500">ニックネームを入力してスタート！</p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
