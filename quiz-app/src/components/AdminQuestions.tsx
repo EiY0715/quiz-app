@@ -44,7 +44,11 @@ export default function AdminQuestions() {
   };
 
   const uploadImage = async (file: File): Promise<string> => {
-    const fileName = `${Date.now()}_${file.name}`;
+    // 拡張子だけ元のファイルから取り出す
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+    // スペースや日本語を含まない安全なファイル名を生成
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
     const { error } = await supabase.storage
       .from('question-images')
       .upload(fileName, file);
