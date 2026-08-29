@@ -25,7 +25,7 @@ export default function AdminLogin({ onSuccess }: Props) {
   return (
     <main className="min-h-screen flex items-center justify-center p-4">
       <div className="card w-full max-w-sm text-center">
-        <h1 className="text-2xl font-bold text-white mb-6">🔒 管理者ログイン</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">🔒 管理者ログイン</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="password"
@@ -35,7 +35,7 @@ export default function AdminLogin({ onSuccess }: Props) {
             className="input-field text-center"
             autoFocus
           />
-          {error && <p className="text-red-300 text-sm">{error}</p>}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
           <button type="submit" className="btn-primary w-full">
             ログイン
           </button>
