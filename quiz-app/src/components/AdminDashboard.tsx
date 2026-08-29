@@ -17,11 +17,11 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <main className="min-h-screen bg-gray-900">
+    <main className="min-h-screen bg-gray-50">
       <div className="flex">
         {/* サイドバー */}
-        <aside className="w-64 min-h-screen bg-gray-800 border-r border-gray-700 p-4">
-          <h1 className="text-xl font-bold text-white mb-6 px-2">⚙️ 管理パネル</h1>
+        <aside className="w-64 min-h-screen bg-white border-r border-gray-200 p-4">
+          <h1 className="text-xl font-bold text-gray-800 mb-6 px-2">⚙️ 管理パネル</h1>
           <nav className="space-y-2">
             {tabs.map((tab) => (
               <button
@@ -30,7 +30,7 @@ export default function AdminDashboard() {
                 className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
                   activeTab === tab.key
                     ? 'bg-primary-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-700'
+                    : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 <span className="mr-2">{tab.icon}</span>
