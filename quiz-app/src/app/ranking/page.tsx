@@ -58,7 +58,7 @@ export default function RankingPage() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // 自動切り替え: 15秒ごと
+  // 自動切り替え: 8秒ごと
   useEffect(() => {
     const interval = setInterval(() => {
       setShowMode((prev) => {
@@ -75,7 +75,7 @@ export default function RankingPage() {
           return 'genre';
         }
       });
-    }, 15000);
+    }, 8000);
 
     return () => clearInterval(interval);
   }, [genreNames, currentGenreIndex]);
