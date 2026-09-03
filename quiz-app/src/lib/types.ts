@@ -8,7 +8,7 @@ export interface Question {
   id: string;
   genre_id: string;
   question_text: string;
-  image_url: string | null;
+  image_urls: string[];
   correct_answers: string[];
   difficulty: number;
   points: number;
