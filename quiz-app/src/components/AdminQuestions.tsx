@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Genre, Question } from '@/lib/types';
 
+type ImageSlot = File | string | null;
+
 export default function AdminQuestions() {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -17,8 +19,8 @@ export default function AdminQuestions() {
   const [formDifficulty, setFormDifficulty] = useState(3);
   const [formPoints, setFormPoints] = useState(10);
   const [formTimeLimit, setFormTimeLimit] = useState(30);
-  const [formImage, setFormImage] = useState<File | null>(null);
-  const [formImageUrl, setFormImageUrl] = useState('');
+  const [imageSlots, setImageSlots] = useState<ImageSlot[]>([null, null, null, null]);
+  const [previewUrls, setPreviewUrls] = useState<(string | null)[]>([null, null, null, null]);
   const [saving, setSaving] = useState(false);
 
   const fetchData = async () => {
@@ -30,6 +32,30 @@ export default function AdminQuestions() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // プレビューURLの生成/破棄
+  useEffect(() => {
+    const urls = imageSlots.map((slot) => {
+      if (slot instanceof File) return URL.createObjectURL(slot);
+      if (typeof slot === 'string') return slot;
+      return null;
+    });
+    setPreviewUrls(urls);
+    return () => {
+      urls.forEach((url, i) => {
+        if (imageSlots[i] instanceof File && url) URL.revokeObjectURL(url);
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imageSlots]);
+
+  const updateSlot = (index: number, value: ImageSlot) => {
+    setImageSlots((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
+
   const resetForm = () => {
     setFormGenre('');
     setFormText('');
@@ -37,18 +63,13 @@ export default function AdminQuestions() {
     setFormDifficulty(3);
     setFormPoints(10);
     setFormTimeLimit(30);
-    setFormImage(null);
-    setFormImageUrl('');
+    setImageSlots([null, null, null, null]);
     setEditingId(null);
     setShowForm(false);
   };
 
   const uploadImage = async (file: File): Promise<string> => {
-    // 拡張子だけ元のファイルから取り出す
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-    // スペースや日本語を含まない安全なファイル名を生成
-    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-
+    const fileName = `${Date.now()}_${file.name}`;
     const { error } = await supabase.storage
       .from('question-images')
       .upload(fileName, file);
@@ -66,9 +87,14 @@ export default function AdminQuestions() {
     }
     setSaving(true);
 
-    let imageUrl = formImageUrl;
-    if (formImage) {
-      imageUrl = await uploadImage(formImage);
+    const imageUrls: string[] = [];
+    for (const slot of imageSlots) {
+      if (slot instanceof File) {
+        const url = await uploadImage(slot);
+        imageUrls.push(url);
+      } else if (typeof slot === 'string') {
+        imageUrls.push(slot);
+      }
     }
 
     const answers = formAnswers.split(',').map((a) => a.trim()).filter(Boolean);
@@ -76,7 +102,7 @@ export default function AdminQuestions() {
     const record = {
       genre_id: formGenre,
       question_text: formText,
-      image_url: imageUrl || null,
+      image_urls: imageUrls,
       correct_answers: answers,
       difficulty: formDifficulty,
       points: formPoints,
@@ -103,7 +129,9 @@ export default function AdminQuestions() {
     setFormDifficulty(q.difficulty);
     setFormPoints(q.points);
     setFormTimeLimit(q.time_limit);
-    setFormImageUrl(q.image_url || '');
+    const slots: ImageSlot[] = [null, null, null, null];
+    (q.image_urls || []).slice(0, 4).forEach((url, i) => { slots[i] = url; });
+    setImageSlots(slots);
     setShowForm(true);
   };
 
@@ -124,6 +152,8 @@ export default function AdminQuestions() {
     await supabase.from('questions').update({ sort_order: tempOrder }).eq('id', newQuestions[swapIdx].id);
     await fetchData();
   };
+
+  const activePreviewCount = previewUrls.filter(Boolean).length;
 
   return (
     <div>
@@ -198,9 +228,9 @@ export default function AdminQuestions() {
               />
             </div>
             <div>
-              <label className="text-sm text-gray-500 block mb-1">制限時間（秒: 20〜100）</label>
+              <label className="text-sm text-gray-500 block mb-1">制限時間（秒: 10〜200）</label>
               <input
-                type="number" min={20} max={100}
+                type="number" min={10} max={200}
                 value={formTimeLimit}
                 onChange={(e) => setFormTimeLimit(Number(e.target.value))}
                 className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800"
@@ -208,15 +238,77 @@ export default function AdminQuestions() {
             </div>
           </div>
 
+          {/* 画像（最大4枚） */}
           <div>
-            <label className="text-sm text-gray-500 block mb-1">画像（任意）</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setFormImage(e.target.files?.[0] || null)}
-              className="text-gray-600"
-            />
+            <label className="text-sm text-gray-500 block mb-2">画像（最大4枚・任意）</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {imageSlots.map((slot, i) => (
+                <div key={i} className="relative">
+                  {previewUrls[i] ? (
+                    <div className="relative rounded-lg overflow-hidden border border-gray-300 aspect-square">
+                      <img src={previewUrls[i] as string} alt={`画像${i + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => updateSlot(i, null)}
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center aspect-square rounded-lg border-2 border-dashed border-gray-300 text-gray-400 text-xs cursor-pointer hover:border-primary-400 hover:text-primary-500 transition-colors">
+                      ＋ 追加
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) updateSlot(i, file);
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
+
+          {/* スマホ表示プレビュー */}
+          {activePreviewCount > 0 && (
+            <div>
+              <label className="text-sm text-gray-500 block mb-2">📱 スマホでの表示プレビュー</label>
+              <div className="mx-auto w-[260px] rounded-[2rem] border-8 border-gray-800 bg-gray-800 shadow-xl overflow-hidden">
+                <div className="bg-gradient-to-br from-sky-100 via-indigo-100 to-pink-100 p-3 min-h-[420px]">
+                  <div className="card p-3">
+                    <div className="w-full bg-gray-200 rounded-full h-2 mb-3 overflow-hidden">
+                      <div className="h-full rounded-full bg-green-500" style={{ width: '80%' }} />
+                    </div>
+                    <div className={`mb-3 grid gap-1 ${activePreviewCount === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                      {previewUrls.filter(Boolean).map((url, i, arr) => (
+                        <div
+                          key={i}
+                          className={`rounded-lg overflow-hidden bg-gray-100 ${
+                            arr.length === 3 && i === 0 ? 'col-span-2' : ''
+                          }`}
+                        >
+                          <img
+                            src={url as string}
+                            alt=""
+                            className={`w-full object-cover ${arr.length === 1 ? 'h-32' : 'h-16'}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs font-bold text-gray-800 leading-snug">
+                      {formText || '問題文がここに表示されます'}
+                    </p>
+                    <div className="mt-3 h-6 bg-white/80 border border-gray-300 rounded-lg" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-3">
             <button onClick={handleSave} disabled={saving} className="btn-primary">
@@ -240,7 +332,7 @@ export default function AdminQuestions() {
             <div className="flex-1">
               <p className="text-gray-800 font-medium truncate">{q.question_text}</p>
               <p className="text-gray-500 text-sm">
-                難易度{q.difficulty} / {q.points}点 / {q.time_limit}秒
+                難易度{q.difficulty} / {q.points}点 / {q.time_limit}秒{q.image_urls && q.image_urls.length > 0 ? ` / 🖼️${q.image_urls.length}枚` : ''}
               </p>
             </div>
             <button onClick={() => editQuestion(q)} className="text-blue-500 hover:text-blue-600 text-sm">編集</button>
