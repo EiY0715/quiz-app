@@ -39,8 +39,8 @@ export default function QuizStart({ onStart }: Props) {
   return (
     <div className="card text-center">
       <div className="mb-6">
-      <h1 className="text-3xl font-black text-gray-800 mb-2">🎉 文化祭クイズ</h1>
-<p className="text-gray-500">ニックネームを入力してスタート！</p>
+      <h1 className="text-2xl sm:text-3xl font-black text-gray-800 mb-2">🎉 文化祭クイズ</h1>
+<p className="text-sm sm:text-base text-gray-500">ニックネームを入力してスタート！</p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
@@ -48,7 +48,7 @@ export default function QuizStart({ onStart }: Props) {
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           placeholder="ニックネーム"
-          className="input-field text-center text-lg"
+          className="input-field text-center text-base sm:text-lg"
           maxLength={20}
           autoFocus
         />
@@ -56,7 +56,7 @@ export default function QuizStart({ onStart }: Props) {
         <button
           type="submit"
           disabled={loading}
-          className="btn-primary w-full text-lg"
+          className="btn-primary w-full text-base sm:text-lg"
         >
           {loading ? '準備中...' : 'クイズをはじめる'}
         </button>
