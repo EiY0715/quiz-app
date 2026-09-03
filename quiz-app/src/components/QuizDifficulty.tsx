@@ -19,12 +19,12 @@ export default function QuizDifficulty({ difficulty, questionNumber, totalQuesti
 
   return (
     <div className="card text-center animate-pulse">
-      <p className="text-gray-500 text-sm mb-2">
+      <p className="text-gray-500 text-xs sm:text-sm mb-2">
         第 {questionNumber} 問 / {totalQuestions} 問
       </p>
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">難易度</h2>
-      <div className="text-4xl text-yellow-500 mb-4">{stars}</div>
-      <p className="text-gray-400 text-sm">まもなく出題されます...</p>
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">難易度</h2>
+      <div className="text-3xl sm:text-4xl text-yellow-500 mb-4">{stars}</div>
+      <p className="text-gray-400 text-xs sm:text-sm">まもなく出題されます...</p>
     </div>
   );
 }
