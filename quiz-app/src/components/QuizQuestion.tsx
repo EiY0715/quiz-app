@@ -59,6 +59,9 @@ export default function QuizQuestion({ question, participantId, onAnswer }: Prop
   const timePercent = (timeLeft / question.time_limit) * 100;
   const timeColor = timeLeft <= 5 ? 'bg-red-500' : timeLeft <= 10 ? 'bg-yellow-500' : 'bg-green-500';
 
+  const images = question.image_urls || [];
+  const imageHeightClass = images.length === 1 ? 'h-40 sm:h-52' : 'h-24 sm:h-32';
+
   return (
     <div className="card">
       {/* タイマーバー */}
@@ -68,23 +71,32 @@ export default function QuizQuestion({ question, participantId, onAnswer }: Prop
           style={{ width: `${timePercent}%` }}
         />
       </div>
-      <div className="text-right text-gray-500 text-sm mb-4">
-        残り <span className={`font-bold text-lg ${timeLeft <= 5 ? 'text-red-500' : 'text-gray-800'}`}>{timeLeft}</span> 秒
+      <div className="text-right text-gray-500 text-xs sm:text-sm mb-4">
+        残り <span className={`font-bold text-base sm:text-lg ${timeLeft <= 5 ? 'text-red-500' : 'text-gray-800'}`}>{timeLeft}</span> 秒
       </div>
 
-      {/* 問題画像 */}
-      {question.image_url && (
-        <div className="mb-4 rounded-xl overflow-hidden">
-          <img
-            src={question.image_url}
-            alt="問題画像"
-            className="w-full h-48 object-cover"
-          />
+      {/* 問題画像（最大4枚） */}
+      {images.length > 0 && (
+        <div className={`mb-4 grid gap-2 ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          {images.map((url, i) => (
+            <div
+              key={i}
+              className={`rounded-xl overflow-hidden bg-gray-100 ${
+                images.length === 3 && i === 0 ? 'col-span-2' : ''
+              }`}
+            >
+              <img
+                src={url}
+                alt={`問題画像${i + 1}`}
+                className={`w-full ${imageHeightClass} object-cover`}
+              />
+            </div>
+          ))}
         </div>
       )}
 
       {/* 問題文 */}
-      <h2 className="text-xl font-bold text-gray-800 mb-6 leading-relaxed">
+      <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-6 leading-relaxed">
         {question.question_text}
       </h2>
 
@@ -95,21 +107,21 @@ export default function QuizQuestion({ question, participantId, onAnswer }: Prop
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder="答えを入力"
-          className="input-field text-center text-lg"
+          className="input-field text-center text-base sm:text-lg"
           disabled={submitted}
           autoFocus
           autoComplete="off"
         />
         {!submitted ? (
-          <button type="submit" className="btn-primary w-full text-lg">
+          <button type="submit" className="btn-primary w-full text-base sm:text-lg">
             回答する
           </button>
         ) : (
           <div className="text-center py-4">
-            <div className="text-2xl mb-2">
+            <div className="text-xl sm:text-2xl mb-2">
               {checkAnswer(answer, question.correct_answers) ? '🎊 正解！' : '😢 不正解...'}
             </div>
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-500 text-xs sm:text-sm">
               正解: {question.correct_answers[0]}
             </p>
           </div>
@@ -118,4 +130,3 @@ export default function QuizQuestion({ question, participantId, onAnswer }: Prop
     </div>
   );
 }
-  
