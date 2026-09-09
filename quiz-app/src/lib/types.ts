@@ -4,11 +4,15 @@ export interface Genre {
   sort_order: number;
 }
 
+export type QuestionType = 'text' | 'choice';
+
 export interface Question {
   id: string;
   genre_id: string;
   question_text: string;
   image_urls: string[];
+  question_type: QuestionType;
+  choices: string[];
   correct_answers: string[];
   difficulty: number;
   points: number;
