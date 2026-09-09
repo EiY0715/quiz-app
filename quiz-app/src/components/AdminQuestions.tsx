@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Genre, Question } from '@/lib/types';
+import { Genre, Question, QuestionType } from '@/lib/types';
 
 type ImageSlot = File | string | null;
+
+const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 export default function AdminQuestions() {
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -15,7 +17,10 @@ export default function AdminQuestions() {
   // フォーム状態
   const [formGenre, setFormGenre] = useState('');
   const [formText, setFormText] = useState('');
+  const [formQuestionType, setFormQuestionType] = useState<QuestionType>('text');
   const [formAnswers, setFormAnswers] = useState('');
+  const [formChoices, setFormChoices] = useState<string[]>(['', '']);
+  const [formCorrectChoiceIndex, setFormCorrectChoiceIndex] = useState<number | null>(null);
   const [formDifficulty, setFormDifficulty] = useState(3);
   const [formPoints, setFormPoints] = useState(10);
   const [formTimeLimit, setFormTimeLimit] = useState(30);
@@ -59,7 +64,10 @@ export default function AdminQuestions() {
   const resetForm = () => {
     setFormGenre('');
     setFormText('');
+    setFormQuestionType('text');
     setFormAnswers('');
+    setFormChoices(['', '']);
+    setFormCorrectChoiceIndex(null);
     setFormDifficulty(3);
     setFormPoints(10);
     setFormTimeLimit(30);
@@ -80,11 +88,63 @@ export default function AdminQuestions() {
     return data.publicUrl;
   };
 
+  const addChoice = () => {
+    setFormChoices((prev) => (prev.length < 6 ? [...prev, ''] : prev));
+  };
+
+  const removeChoice = (index: number) => {
+    setFormChoices((prev) => {
+      if (prev.length <= 2) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
+    setFormCorrectChoiceIndex((prev) => {
+      if (prev === null) return prev;
+      if (prev === index) return null;
+      if (prev > index) return prev - 1;
+      return prev;
+    });
+  };
+
+  const updateChoiceText = (index: number, value: string) => {
+    setFormChoices((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
+
   const handleSave = async () => {
-    if (!formGenre || !formText.trim() || !formAnswers.trim()) {
-      alert('ジャンル、問題文、正解は必須です');
+    if (!formGenre || !formText.trim()) {
+      alert('ジャンルと問題文は必須です');
       return;
     }
+
+    if (formQuestionType === 'text') {
+      if (!formAnswers.trim()) {
+        alert('正解を入力してください');
+        return;
+      }
+    } else {
+      // 選択式なのに記述式の欄に文字が残っている場合はエラー
+      if (formAnswers.trim()) {
+        alert('選択式が選ばれていますが、記述式の正解欄に文字が残っています。記述式の入力欄を空にしてから保存してください。');
+        return;
+      }
+      const trimmedChoices = formChoices.map((c) => c.trim());
+      if (trimmedChoices.some((c) => !c)) {
+        alert('すべての選択肢を入力してください');
+        return;
+      }
+      if (trimmedChoices.length < 2) {
+        alert('選択肢は2つ以上入力してください');
+        return;
+      }
+      if (formCorrectChoiceIndex === null || !trimmedChoices[formCorrectChoiceIndex]) {
+        alert('正解の選択肢を選んでください');
+        return;
+      }
+    }
+
     setSaving(true);
 
     const imageUrls: string[] = [];
@@ -97,18 +157,31 @@ export default function AdminQuestions() {
       }
     }
 
-    const answers = formAnswers.split(',').map((a) => a.trim()).filter(Boolean);
-
-    const record = {
-      genre_id: formGenre,
-      question_text: formText,
-      image_urls: imageUrls,
-      correct_answers: answers,
-      difficulty: formDifficulty,
-      points: formPoints,
-      time_limit: formTimeLimit,
-      sort_order: editingId ? undefined : questions.length,
-    };
+    const record = formQuestionType === 'text'
+      ? {
+          genre_id: formGenre,
+          question_text: formText,
+          image_urls: imageUrls,
+          question_type: 'text' as const,
+          choices: [],
+          correct_answers: formAnswers.split(',').map((a) => a.trim()).filter(Boolean),
+          difficulty: formDifficulty,
+          points: formPoints,
+          time_limit: formTimeLimit,
+          sort_order: editingId ? undefined : questions.length,
+        }
+      : {
+          genre_id: formGenre,
+          question_text: formText,
+          image_urls: imageUrls,
+          question_type: 'choice' as const,
+          choices: formChoices.map((c) => c.trim()),
+          correct_answers: [formChoices[formCorrectChoiceIndex as number].trim()],
+          difficulty: formDifficulty,
+          points: formPoints,
+          time_limit: formTimeLimit,
+          sort_order: editingId ? undefined : questions.length,
+        };
 
     if (editingId) {
       await supabase.from('questions').update(record).eq('id', editingId);
@@ -125,13 +198,27 @@ export default function AdminQuestions() {
     setEditingId(q.id);
     setFormGenre(q.genre_id);
     setFormText(q.question_text);
-    setFormAnswers(q.correct_answers.join(', '));
     setFormDifficulty(q.difficulty);
     setFormPoints(q.points);
     setFormTimeLimit(q.time_limit);
+
     const slots: ImageSlot[] = [null, null, null, null];
     (q.image_urls || []).slice(0, 4).forEach((url, i) => { slots[i] = url; });
     setImageSlots(slots);
+
+    setFormQuestionType(q.question_type || 'text');
+    if (q.question_type === 'choice') {
+      const loadedChoices = q.choices && q.choices.length >= 2 ? q.choices : ['', ''];
+      setFormChoices(loadedChoices);
+      const correctIdx = loadedChoices.findIndex((c) => q.correct_answers.includes(c));
+      setFormCorrectChoiceIndex(correctIdx >= 0 ? correctIdx : null);
+      setFormAnswers('');
+    } else {
+      setFormChoices(['', '']);
+      setFormCorrectChoiceIndex(null);
+      setFormAnswers(q.correct_answers.join(', '));
+    }
+
     setShowForm(true);
   };
 
@@ -146,7 +233,6 @@ export default function AdminQuestions() {
     const swapIdx = direction === 'up' ? index - 1 : index + 1;
     if (swapIdx < 0 || swapIdx >= newQuestions.length) return;
 
-    // sort_order を入れ替え
     const tempOrder = newQuestions[index].sort_order;
     await supabase.from('questions').update({ sort_order: newQuestions[swapIdx].sort_order }).eq('id', newQuestions[index].id);
     await supabase.from('questions').update({ sort_order: tempOrder }).eq('id', newQuestions[swapIdx].id);
@@ -154,6 +240,8 @@ export default function AdminQuestions() {
   };
 
   const activePreviewCount = previewUrls.filter(Boolean).length;
+  const isText = formQuestionType === 'text';
+  const isChoice = formQuestionType === 'choice';
 
   return (
     <div>
@@ -206,15 +294,92 @@ export default function AdminQuestions() {
             />
           </div>
 
+          {/* 回答形式トグル */}
           <div>
-            <label className="text-sm text-gray-500 block mb-1">正解（カンマ区切りで複数可）</label>
+            <label className="text-sm text-gray-500 block mb-1">回答形式</label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setFormQuestionType('text')}
+                className={`flex-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                  isText ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                ✏️ 記述式
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormQuestionType('choice')}
+                className={`flex-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                  isChoice ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                ☑️ 選択式
+              </button>
+            </div>
+          </div>
+
+          {/* 記述式: 正解入力 */}
+          <div className={isChoice ? 'opacity-40' : ''}>
+            <label className="text-sm text-gray-500 block mb-1">
+              正解（カンマ区切りで複数可）{isChoice && '（選択式のため入力不可）'}
+            </label>
             <input
               type="text"
               value={formAnswers}
               onChange={(e) => setFormAnswers(e.target.value)}
               placeholder="例: 徳川家康, とくがわいえやす"
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800"
+              disabled={isChoice}
+              className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 disabled:cursor-not-allowed disabled:bg-gray-100"
             />
+          </div>
+
+          {/* 選択式: 選択肢入力 */}
+          <div className={isText ? 'opacity-40' : ''}>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm text-gray-500">
+                選択肢（2〜6個・左のラジオボタンで正解を指定）{isText && '（記述式のため入力不可）'}
+              </label>
+              <button
+                type="button"
+                onClick={addChoice}
+                disabled={isText || formChoices.length >= 6}
+                className="text-xs text-primary-600 hover:text-primary-700 disabled:text-gray-300 disabled:cursor-not-allowed"
+              >
+                ＋ 選択肢を追加
+              </button>
+            </div>
+            <div className="space-y-2">
+              {formChoices.map((choice, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="correctChoice"
+                    checked={formCorrectChoiceIndex === i}
+                    onChange={() => setFormCorrectChoiceIndex(i)}
+                    disabled={isText}
+                    className="w-4 h-4 accent-primary-600 disabled:cursor-not-allowed shrink-0"
+                  />
+                  <span className="text-xs font-bold text-gray-400 w-4 shrink-0">{OPTION_LABELS[i]}</span>
+                  <input
+                    type="text"
+                    value={choice}
+                    onChange={(e) => updateChoiceText(i, e.target.value)}
+                    disabled={isText}
+                    placeholder={`選択肢${OPTION_LABELS[i]}`}
+                    className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 text-sm disabled:cursor-not-allowed disabled:bg-gray-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeChoice(i)}
+                    disabled={isText || formChoices.length <= 2}
+                    className="text-red-400 hover:text-red-600 text-xs disabled:text-gray-300 disabled:cursor-not-allowed shrink-0"
+                  >
+                    削除
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -332,7 +497,8 @@ export default function AdminQuestions() {
             <div className="flex-1">
               <p className="text-gray-800 font-medium truncate">{q.question_text}</p>
               <p className="text-gray-500 text-sm">
-                難易度{q.difficulty} / {q.points}点 / {q.time_limit}秒{q.image_urls && q.image_urls.length > 0 ? ` / 🖼️${q.image_urls.length}枚` : ''}
+                {q.question_type === 'choice' ? `☑️ 選択式(${q.choices?.length ?? 0}択)` : '✏️ 記述式'}
+                {' / '}難易度{q.difficulty} / {q.points}点 / {q.time_limit}秒{q.image_urls && q.image_urls.length > 0 ? ` / 🖼️${q.image_urls.length}枚` : ''}
               </p>
             </div>
             <button onClick={() => editQuestion(q)} className="text-blue-500 hover:text-blue-600 text-sm">編集</button>
