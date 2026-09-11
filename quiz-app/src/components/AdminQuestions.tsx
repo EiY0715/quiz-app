@@ -8,6 +8,19 @@ type ImageSlot = File | string | null;
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
+interface QuestionRecord {
+  genre_id: string;
+  question_text: string;
+  image_urls: string[];
+  question_type: QuestionType;
+  choices: string[];
+  correct_answers: string[];
+  difficulty: number;
+  points: number;
+  time_limit: number;
+  sort_order?: number;
+}
+
 export default function AdminQuestions() {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -119,11 +132,15 @@ export default function AdminQuestions() {
       return;
     }
 
+    let correctAnswers: string[] = [];
+    let choicesToSave: string[] = [];
+
     if (formQuestionType === 'text') {
       if (!formAnswers.trim()) {
         alert('正解を入力してください');
         return;
       }
+      correctAnswers = formAnswers.split(',').map((a) => a.trim()).filter(Boolean);
     } else {
       // 選択式なのに記述式の欄に文字が残っている場合はエラー
       if (formAnswers.trim()) {
@@ -143,6 +160,8 @@ export default function AdminQuestions() {
         alert('正解の選択肢を選んでください');
         return;
       }
+      choicesToSave = trimmedChoices;
+      correctAnswers = [trimmedChoices[formCorrectChoiceIndex]];
     }
 
     setSaving(true);
@@ -157,31 +176,18 @@ export default function AdminQuestions() {
       }
     }
 
-    const record = formQuestionType === 'text'
-      ? {
-          genre_id: formGenre,
-          question_text: formText,
-          image_urls: imageUrls,
-          question_type: 'text' as const,
-          choices: [],
-          correct_answers: formAnswers.split(',').map((a) => a.trim()).filter(Boolean),
-          difficulty: formDifficulty,
-          points: formPoints,
-          time_limit: formTimeLimit,
-          sort_order: editingId ? undefined : questions.length,
-        }
-      : {
-          genre_id: formGenre,
-          question_text: formText,
-          image_urls: imageUrls,
-          question_type: 'choice' as const,
-          choices: formChoices.map((c) => c.trim()),
-          correct_answers: [formChoices[formCorrectChoiceIndex as number].trim()],
-          difficulty: formDifficulty,
-          points: formPoints,
-          time_limit: formTimeLimit,
-          sort_order: editingId ? undefined : questions.length,
-        };
+    const record: QuestionRecord = {
+      genre_id: formGenre,
+      question_text: formText,
+      image_urls: imageUrls,
+      question_type: formQuestionType,
+      choices: choicesToSave,
+      correct_answers: correctAnswers,
+      difficulty: formDifficulty,
+      points: formPoints,
+      time_limit: formTimeLimit,
+      sort_order: editingId ? undefined : questions.length,
+    };
 
     if (editingId) {
       await supabase.from('questions').update(record).eq('id', editingId);
@@ -490,25 +496,4 @@ export default function AdminQuestions() {
       <div className="space-y-2">
         {questions.map((q, idx) => (
           <div key={q.id} className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-gray-200">
-            <div className="flex flex-col gap-1">
-              <button onClick={() => moveQuestion(idx, 'up')} className="text-gray-400 hover:text-gray-800 text-xs">▲</button>
-              <button onClick={() => moveQuestion(idx, 'down')} className="text-gray-400 hover:text-gray-800 text-xs">▼</button>
-            </div>
-            <div className="flex-1">
-              <p className="text-gray-800 font-medium truncate">{q.question_text}</p>
-              <p className="text-gray-500 text-sm">
-                {q.question_type === 'choice' ? `☑️ 選択式(${q.choices?.length ?? 0}択)` : '✏️ 記述式'}
-                {' / '}難易度{q.difficulty} / {q.points}点 / {q.time_limit}秒{q.image_urls && q.image_urls.length > 0 ? ` / 🖼️${q.image_urls.length}枚` : ''}
-              </p>
-            </div>
-            <button onClick={() => editQuestion(q)} className="text-blue-500 hover:text-blue-600 text-sm">編集</button>
-            <button onClick={() => deleteQuestion(q.id)} className="text-red-500 hover:text-red-600 text-sm">削除</button>
-          </div>
-        ))}
-        {questions.length === 0 && (
-          <p className="text-gray-400 text-center py-8">問題がまだありません</p>
-        )}
-      </div>
-    </div>
-  );
-}
+            <div className="flex
