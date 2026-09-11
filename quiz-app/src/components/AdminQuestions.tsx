@@ -27,7 +27,6 @@ export default function AdminQuestions() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // フォーム状態
   const [formGenre, setFormGenre] = useState('');
   const [formText, setFormText] = useState('');
   const [formQuestionType, setFormQuestionType] = useState<QuestionType>('text');
@@ -50,7 +49,6 @@ export default function AdminQuestions() {
 
   useEffect(() => { fetchData(); }, []);
 
-  // プレビューURLの生成/破棄
   useEffect(() => {
     const urls = imageSlots.map((slot) => {
       if (slot instanceof File) return URL.createObjectURL(slot);
@@ -142,7 +140,6 @@ export default function AdminQuestions() {
       }
       correctAnswers = formAnswers.split(',').map((a) => a.trim()).filter(Boolean);
     } else {
-      // 選択式なのに記述式の欄に文字が残っている場合はエラー
       if (formAnswers.trim()) {
         alert('選択式が選ばれていますが、記述式の正解欄に文字が残っています。記述式の入力欄を空にしてから保存してください。');
         return;
@@ -258,7 +255,6 @@ export default function AdminQuestions() {
         </button>
       </div>
 
-      {/* フォーム */}
       {showForm && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 space-y-4 shadow-sm">
           <h3 className="text-lg font-bold text-gray-800">
@@ -300,7 +296,6 @@ export default function AdminQuestions() {
             />
           </div>
 
-          {/* 回答形式トグル */}
           <div>
             <label className="text-sm text-gray-500 block mb-1">回答形式</label>
             <div className="flex gap-2">
@@ -325,7 +320,6 @@ export default function AdminQuestions() {
             </div>
           </div>
 
-          {/* 記述式: 正解入力 */}
           <div className={isChoice ? 'opacity-40' : ''}>
             <label className="text-sm text-gray-500 block mb-1">
               正解（カンマ区切りで複数可）{isChoice && '（選択式のため入力不可）'}
@@ -340,7 +334,6 @@ export default function AdminQuestions() {
             />
           </div>
 
-          {/* 選択式: 選択肢入力 */}
           <div className={isText ? 'opacity-40' : ''}>
             <div className="flex items-center justify-between mb-1">
               <label className="text-sm text-gray-500">
@@ -409,7 +402,6 @@ export default function AdminQuestions() {
             </div>
           </div>
 
-          {/* 画像（最大4枚） */}
           <div>
             <label className="text-sm text-gray-500 block mb-2">画像（最大4枚・任意）</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -445,7 +437,6 @@ export default function AdminQuestions() {
             </div>
           </div>
 
-          {/* スマホ表示プレビュー */}
           {activePreviewCount > 0 && (
             <div>
               <label className="text-sm text-gray-500 block mb-2">📱 スマホでの表示プレビュー</label>
@@ -492,8 +483,28 @@ export default function AdminQuestions() {
         </div>
       )}
 
-      {/* 問題一覧 */}
       <div className="space-y-2">
         {questions.map((q, idx) => (
           <div key={q.id} className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-gray-200">
-            <div className="flex
+            <div className="flex flex-col gap-1">
+              <button onClick={() => moveQuestion(idx, 'up')} className="text-gray-400 hover:text-gray-800 text-xs">▲</button>
+              <button onClick={() => moveQuestion(idx, 'down')} className="text-gray-400 hover:text-gray-800 text-xs">▼</button>
+            </div>
+            <div className="flex-1">
+              <p className="text-gray-800 font-medium truncate">{q.question_text}</p>
+              <p className="text-gray-500 text-sm">
+                {q.question_type === 'choice' ? `☑️ 選択式(${q.choices?.length ?? 0}択)` : '✏️ 記述式'}
+                {' / '}難易度{q.difficulty} / {q.points}点 / {q.time_limit}秒{q.image_urls && q.image_urls.length > 0 ? ` / 🖼️${q.image_urls.length}枚` : ''}
+              </p>
+            </div>
+            <button onClick={() => editQuestion(q)} className="text-blue-500 hover:text-blue-600 text-sm">編集</button>
+            <button onClick={() => deleteQuestion(q.id)} className="text-red-500 hover:text-red-600 text-sm">削除</button>
+          </div>
+        ))}
+        {questions.length === 0 && (
+          <p className="text-gray-400 text-center py-8">問題がまだありません</p>
+        )}
+      </div>
+    </div>
+  );
+}
